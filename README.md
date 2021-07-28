@@ -87,7 +87,7 @@ The package can be installed using the Git URL `https://github.com/Looooong/Unit
 
 ### Load Image Synchronously
 
-The synchronous variants are the same as the  asynchronous counterparts but without `Async` prefix in theirs name. They are useful for debugging and profiling within a frame.
+The synchronous variants are the same as the  asynchronous counterparts but without `Async` suffix in theirs name. They are useful for debugging and profiling within a frame.
 
 ```cs
   var imageData = File.ReadAllBytes();
