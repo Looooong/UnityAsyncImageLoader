@@ -1,0 +1,23 @@
+{
+  "name": "com.looooong.asyncimageloader",
+  "version": "0.1.0",
+  "displayName": "Asynchronous Image Loader",
+  "unity": "2019.1",
+  "keywords": [
+    "image",
+    "texture",
+    "async",
+    "asynchronous",
+    "loader",
+    "importer"
+  ],
+  "author": {
+    "name": "Nguyễn Đức Long",
+    "email": "duclong120995@gmail.com"
+  },
+  "description": "An asynchronous version of ImageConversion.LoadImage.",
+  "dependencies": {
+    "com.unity.burst": "1.5.4",
+    "com.unity.mathematics": "1.2.1"
+  }
+}
