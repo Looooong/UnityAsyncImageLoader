@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+## [0.1.1] - 2021-07-30
 ### Added
 - Add `CHANGELOG.md`.
 
@@ -14,5 +16,6 @@
 ### Added
 - Implement `AsyncImageLoader`.
 
-[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.0
