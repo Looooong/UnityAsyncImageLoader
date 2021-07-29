@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Unity.Burst;
@@ -291,10 +291,10 @@ public static partial class AsyncImageLoader {
         var outputY = index / outputWidth;
         var outputColor = new uint3();
 
-        for (int offsetX = 0; offsetX < 2; offsetX++) {
-          for (int offsetY = 0; offsetY < 2; offsetY++) {
-            var inputX = min(mad(2, outputX, offsetX), inputWidth);
-            var inputY = min(mad(2, outputY, offsetY), inputHeight);
+        for (var offsetX = 0; offsetX < 2; offsetX++) {
+          for (var offsetY = 0; offsetY < 2; offsetY++) {
+            var inputX = min(mad(2, outputX, offsetX), inputWidth - 1);
+            var inputY = min(mad(2, outputY, offsetY), inputHeight - 1);
             var inputIndex = mad(inputWidth, inputY, inputX);
             outputColor.x += (uint)inputMipmap[mad(3, inputIndex, 0)] >> 2;
             outputColor.y += (uint)inputMipmap[mad(3, inputIndex, 1)] >> 2;
@@ -317,7 +317,7 @@ public static partial class AsyncImageLoader {
 
       public int outputWidth;
       public int outputHeight;
-      [WriteOnly, NativeDisableParallelForRestriction]
+      [WriteOnly]
       public NativeSlice<uint> outputMipmap;
 
       public void Execute(int index) {
@@ -325,11 +325,11 @@ public static partial class AsyncImageLoader {
         var outputY = index / outputWidth;
         var outputColor = new uint4();
 
-        for (int offsetX = 0; offsetX < 2; offsetX++) {
-          for (int offsetY = 0; offsetY < 2; offsetY++) {
-            var inputX = min(outputX * 2 + offsetX, inputWidth);
-            var inputY = min(outputY * 2 + offsetY, inputHeight);
-            var inputColor = inputMipmap[inputY * inputWidth + inputX];
+        for (var offsetX = 0; offsetX < 2; offsetX++) {
+          for (var offsetY = 0; offsetY < 2; offsetY++) {
+            var inputX = min(mad(2, outputX, offsetX), inputWidth - 1);
+            var inputY = min(mad(2, outputY, offsetY), inputHeight - 1);
+            var inputColor = inputMipmap[mad(inputWidth, inputY, inputX)];
             outputColor.x += (inputColor & 0x000000FFu) >> 2;
             outputColor.y += (inputColor & 0x0000FF00u) >> 10;
             outputColor.z += (inputColor & 0x00FF0000u) >> 18;
