@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Unity.Burst;
@@ -33,7 +33,7 @@ public static partial class AsyncImageLoader {
     IntPtr _bitmap;
     int _width;
     int _height;
-    bool _isTransparent;
+    TextureFormat _textureFormat;
     int _pixelSize; // In bytes
 
     JobHandle _finalJob;
@@ -68,8 +68,7 @@ public static partial class AsyncImageLoader {
             throw new Exception("Texture size exceed maximum dimension supported by Unity.");
           }
 
-          _isTransparent = FreeImage.IsTransparent(_bitmap);
-          _pixelSize = _isTransparent ? 4 : 3;
+          DetermineTextureFormat();
         } finally {
           if (memoryStream != IntPtr.Zero) FreeImage.CloseMemory(memoryStream);
         }
@@ -86,11 +85,7 @@ public static partial class AsyncImageLoader {
     public Texture2D CreateNewTexture() {
       using (CreateNewTextureMarker.Auto()) {
         var mipmapCount = CalculateMipmapCount();
-        var texture = new Texture2D(
-          _width, _height,
-          _isTransparent ? TextureFormat.RGBA32 : TextureFormat.RGB24,
-          mipmapCount, _loaderSettings.linear
-        );
+        var texture = new Texture2D(_width, _height, _textureFormat, mipmapCount, _loaderSettings.linear);
         var rawTextureView = texture.GetRawTextureData<byte>();
         LoadRawTextureData(rawTextureView);
         ProcessRawTextureData(rawTextureView, mipmapCount);
@@ -102,11 +97,7 @@ public static partial class AsyncImageLoader {
 
     public async Task<Texture2D> CreateNewTextureAsync() {
       var mipmapCount = CalculateMipmapCount();
-      var texture = new Texture2D(
-        _width, _height,
-        _isTransparent ? TextureFormat.RGBA32 : TextureFormat.RGB24,
-        mipmapCount, _loaderSettings.linear
-      );
+      var texture = new Texture2D(_width, _height, _textureFormat, mipmapCount, _loaderSettings.linear);
       var rawTextureView = texture.GetRawTextureData<byte>();
       await Task.Run(() => LoadRawTextureData(rawTextureView));
       ProcessRawTextureData(rawTextureView, mipmapCount);
@@ -118,11 +109,7 @@ public static partial class AsyncImageLoader {
     public void LoadIntoTexture(Texture2D texture) {
       using (LoadIntoTextureMarker.Auto()) {
         var mipmapCount = CalculateMipmapCount(true);
-        texture.Resize(
-          _width, _height,
-          _isTransparent ? TextureFormat.RGBA32 : TextureFormat.RGB24,
-          _loaderSettings.generateMipmap
-        );
+        texture.Resize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
         var rawTextureView = texture.GetRawTextureData<byte>();
         LoadRawTextureData(rawTextureView);
         ProcessRawTextureData(rawTextureView, mipmapCount);
@@ -133,11 +120,7 @@ public static partial class AsyncImageLoader {
 
     public async Task LoadIntoTextureAsync(Texture2D texture) {
       var mipmapCount = CalculateMipmapCount(true);
-      texture.Resize(
-        _width, _height,
-        _isTransparent ? TextureFormat.RGBA32 : TextureFormat.RGB24,
-        _loaderSettings.generateMipmap
-      );
+      texture.Resize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
       var rawTextureView = texture.GetRawTextureData<byte>();
       await Task.Run(() => LoadRawTextureData(rawTextureView));
       ProcessRawTextureData(rawTextureView, mipmapCount);
@@ -171,6 +154,41 @@ public static partial class AsyncImageLoader {
       }
     }
 
+    void DetermineTextureFormat() {
+      var type = FreeImage.GetImageType(_bitmap);
+
+      switch (type) {
+        case FreeImage.Type.FIT_BITMAP:
+          var bpp = FreeImage.GetBPP(_bitmap);
+
+          switch (bpp) {
+            case 24:
+              _textureFormat = TextureFormat.RGB24;
+              _pixelSize = 3;
+              break;
+            case 32:
+              _textureFormat = TextureFormat.RGBA32;
+              _pixelSize = 4;
+              break;
+            default:
+              throw new Exception($"Bitmap bitdepth not supported: {bpp}");
+          }
+          break;
+        case FreeImage.Type.FIT_RGB16:
+        case FreeImage.Type.FIT_RGBF:
+          _textureFormat = TextureFormat.RGB24;
+          _pixelSize = 3;
+          break;
+        case FreeImage.Type.FIT_RGBA16:
+        case FreeImage.Type.FIT_RGBAF:
+          _textureFormat = TextureFormat.RGBA32;
+          _pixelSize = 4;
+          break;
+        default:
+          throw new Exception($"Image type not supported: {type}");
+      }
+    }
+
     void LoadRawTextureData(NativeArray<byte> rawTextureView) {
       using (LoadRawTextureDataMarker.Auto()) {
         var mipmapDimensions = CalculateMipmapDimensions(0);
@@ -181,7 +199,7 @@ public static partial class AsyncImageLoader {
           FreeImage.ConvertToRawBits(
             (IntPtr)mipmapSlice.GetUnsafePtr(), _bitmap,
             _pixelSize * mipmapDimensions.x,
-            _isTransparent ? 32u : 24u,
+            _textureFormat == TextureFormat.RGBA32 ? 32u : 24u,
             0, 0, 0, false
           );
         }
@@ -195,7 +213,7 @@ public static partial class AsyncImageLoader {
         var mipmapSlice = new NativeSlice<byte>(rawTextureView, 0, _pixelSize * mipmapSize);
         var mipmapIndex = _pixelSize * mipmapSize;
 
-        _finalJob = _isTransparent ?
+        _finalJob = _textureFormat == TextureFormat.RGBA32 ?
           new SwapGBRA32ToRGBA32Job {
             mipmapSlice = mipmapSlice
           }.Schedule(mipmapSize, 8192) :
@@ -208,7 +226,7 @@ public static partial class AsyncImageLoader {
           mipmapSize = nextMipmapDimensions.x * nextMipmapDimensions.y;
           var nextMipmapSlice = new NativeSlice<byte>(rawTextureView, mipmapIndex, _pixelSize * mipmapSize);
           mipmapIndex += _pixelSize * mipmapSize;
-          _finalJob = _isTransparent ?
+          _finalJob = _textureFormat == TextureFormat.RGBA32 ?
             new FilterMipmapRGBA32Job {
               inputWidth = mipmapDimensions.x,
               inputHeight = mipmapDimensions.y,

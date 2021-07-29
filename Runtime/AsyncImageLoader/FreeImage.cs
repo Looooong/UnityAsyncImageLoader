@@ -3,15 +3,6 @@ using System.Runtime.InteropServices;
 
 public static partial class AsyncImageLoader {
   public class FreeImage {
-    public enum Filter {
-      FILTER_BOX = 0,
-      FILTER_BICUBIC = 1,
-      FILTER_BILINEAR = 2,
-      FILTER_BSPLINE = 3,
-      FILTER_CATMULLROM = 4,
-      FILTER_LANCZOS3 = 5
-    }
-
     public enum Format {
       FIF_UNKNOWN = -1,
       FIF_BMP = 0,
@@ -54,6 +45,31 @@ public static partial class AsyncImageLoader {
       FIF_JXR = 36
     }
 
+    internal enum Type {
+      FIT_UNKNOWN = 0,
+      FIT_BITMAP = 1,
+      FIT_UINT16 = 2,
+      FIT_INT16 = 3,
+      FIT_UINT32 = 4,
+      FIT_INT32 = 5,
+      FIT_FLOAT = 6,
+      FIT_DOUBLE = 7,
+      FIT_COMPLEX = 8,
+      FIT_RGB16 = 9,
+      FIT_RGBA16 = 10,
+      FIT_RGBF = 11,
+      FIT_RGBAF = 12
+    }
+
+    internal enum ColorType {
+      FIC_MINISWHITE = 0,
+      FIC_MINISBLACK = 1,
+      FIC_RGB = 2,
+      FIC_PALETTE = 3,
+      FIC_RGBALPHA = 4,
+      FIC_CMYK = 5
+    }
+
     const string FreeImageLibrary = "FreeImage";
 
     [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_GetFileTypeFromMemory")]
@@ -80,7 +96,10 @@ public static partial class AsyncImageLoader {
     [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_GetHeight")]
     internal static extern uint GetHeight(IntPtr handle);
 
-    [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_IsTransparent")]
-    internal static extern bool IsTransparent(IntPtr dib);
+    [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_GetImageType")]
+    internal static extern Type GetImageType(IntPtr dib);
+
+    [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_GetBPP")]
+    internal static extern int GetBPP(IntPtr dib);
   }
 }
