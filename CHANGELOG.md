@@ -2,6 +2,9 @@
 ### Added
 - Add `CHANGELOG.md`.
 
+### Changed
+- Refactor Burst jobs.
+
 ### Fixed
 - Fix typo in `README.md`.
 - Fix performance issue when importing PNG without alpha channel.

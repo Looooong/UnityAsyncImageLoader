@@ -142,15 +142,15 @@ public static partial class AsyncImageLoader {
       return mipmapCount;
     }
 
-    Vector2Int CalculateMipmapDimensions(int mipmapLevel) {
+    int2 CalculateMipmapDimensions(int mipmapLevel) {
       // Base level
       if (mipmapLevel == 0) {
-        return new Vector2Int(_width, _height);
+        return int2(_width, _height);
       } else {
         var mipmapFactor = Mathf.Pow(2f, -mipmapLevel);
         var mipmapWidth = Mathf.Max(1, Mathf.FloorToInt(mipmapFactor * _width));
         var mipmapHeight = Mathf.Max(1, Mathf.FloorToInt(mipmapFactor * _height));
-        return new Vector2Int(mipmapWidth, mipmapHeight);
+        return int2(mipmapWidth, mipmapHeight);
       }
     }
 
@@ -213,36 +213,26 @@ public static partial class AsyncImageLoader {
         var mipmapSlice = new NativeSlice<byte>(rawTextureView, 0, _pixelSize * mipmapSize);
         var mipmapIndex = _pixelSize * mipmapSize;
 
-        _finalJob = _textureFormat == TextureFormat.RGBA32 ?
-          new SwapGBRA32ToRGBA32Job {
-            mipmapSlice = mipmapSlice
-          }.Schedule(mipmapSize, 8192) :
-          new SwapGBR24ToRGB24Job {
-            mipmapSlice = mipmapSlice
-          }.Schedule(mipmapSize, 8192);
+        _finalJob = new BGRToRGBJob {
+          textureData = mipmapSlice,
+          processFunction = _textureFormat == TextureFormat.RGBA32 ?
+            BGRToRGBJob.BGRA32ToRGBA32FP : BGRToRGBJob.BGR24ToRGB24FP
+        }.Schedule(mipmapSize, 8192);
 
         for (int mipmapLevel = 1; mipmapLevel < mipmapCount; mipmapLevel++) {
           var nextMipmapDimensions = CalculateMipmapDimensions(mipmapLevel);
           mipmapSize = nextMipmapDimensions.x * nextMipmapDimensions.y;
           var nextMipmapSlice = new NativeSlice<byte>(rawTextureView, mipmapIndex, _pixelSize * mipmapSize);
           mipmapIndex += _pixelSize * mipmapSize;
-          _finalJob = _textureFormat == TextureFormat.RGBA32 ?
-            new FilterMipmapRGBA32Job {
-              inputWidth = mipmapDimensions.x,
-              inputHeight = mipmapDimensions.y,
-              inputMipmap = mipmapSlice.SliceConvert<uint>(),
-              outputWidth = nextMipmapDimensions.x,
-              outputHeight = nextMipmapDimensions.y,
-              outputMipmap = nextMipmapSlice.SliceConvert<uint>(),
-            }.Schedule(mipmapSize, 1024, _finalJob) :
-            new FilterMipmapRGB24Job {
-              inputWidth = mipmapDimensions.x,
-              inputHeight = mipmapDimensions.y,
-              inputMipmap = mipmapSlice,
-              outputWidth = nextMipmapDimensions.x,
-              outputHeight = nextMipmapDimensions.y,
-              outputMipmap = nextMipmapSlice,
-            }.Schedule(mipmapSize, 1024, _finalJob);
+
+          _finalJob = new FilterMipmapJob {
+            inputMipmap = mipmapSlice,
+            inputDimensions = mipmapDimensions,
+            outputMipmap = nextMipmapSlice,
+            outputDimensions = nextMipmapDimensions,
+            processFunction = _textureFormat == TextureFormat.RGBA32 ?
+              FilterMipmapJob.FilterMipmapRGBA32FP : FilterMipmapJob.FilterMipmapRGB24FP
+          }.Schedule(mipmapSize, 1024, _finalJob);
 
           mipmapDimensions = nextMipmapDimensions;
           mipmapSlice = nextMipmapSlice;
@@ -251,98 +241,97 @@ public static partial class AsyncImageLoader {
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct SwapGBR24ToRGB24Job : IJobParallelFor {
-      [NativeDisableParallelForRestriction]
-      public NativeSlice<byte> mipmapSlice;
+    struct BGRToRGBJob : IJobParallelFor {
+      public delegate void BGRToRGBDelegate(ref NativeSlice<byte> textureData, int index);
 
-      public void Execute(int index) {
-        var temp = mipmapSlice[3 * index];
-        mipmapSlice[3 * index] = mipmapSlice[3 * index + 2];
-        mipmapSlice[3 * index + 2] = temp;
+      public static readonly FunctionPointer<BGRToRGBDelegate> BGR24ToRGB24FP = BurstCompiler.CompileFunctionPointer<BGRToRGBDelegate>(BGR24ToRGB24);
+      public static readonly FunctionPointer<BGRToRGBDelegate> BGRA32ToRGBA32FP = BurstCompiler.CompileFunctionPointer<BGRToRGBDelegate>(BGRA32ToRGBA32);
+
+      [BurstCompile(CompileSynchronously = true)]
+      static void BGR24ToRGB24(ref NativeSlice<byte> textureData, int index) {
+        var temp = textureData[mad(3, index, 0)];
+        textureData[mad(3, index, 0)] = textureData[mad(3, index, 2)];
+        textureData[mad(3, index, 2)] = temp;
       }
+
+      [BurstCompile(CompileSynchronously = true)]
+      static void BGRA32ToRGBA32(ref NativeSlice<byte> textureData, int index) {
+        var temp = textureData[mad(4, index, 0)];
+        textureData[mad(4, index, 0)] = textureData[mad(4, index, 2)];
+        textureData[mad(4, index, 2)] = temp;
+      }
+
+      [NativeDisableParallelForRestriction]
+      public NativeSlice<byte> textureData;
+      public FunctionPointer<BGRToRGBDelegate> processFunction;
+
+      public void Execute(int index) => processFunction.Invoke(ref textureData, index);
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct SwapGBRA32ToRGBA32Job : IJobParallelFor {
-      [NativeDisableParallelForRestriction]
-      public NativeSlice<byte> mipmapSlice;
+    struct FilterMipmapJob : IJobParallelFor {
+      public delegate void FilterMipmapDelegate(ref FilterMipmapJob job, int outputIndex);
 
-      public void Execute(int index) {
-        var temp = mipmapSlice[4 * index];
-        mipmapSlice[4 * index] = mipmapSlice[4 * index + 2];
-        mipmapSlice[4 * index + 2] = temp;
-      }
-    }
+      public static readonly FunctionPointer<FilterMipmapDelegate> FilterMipmapRGB24FP = BurstCompiler.CompileFunctionPointer<FilterMipmapDelegate>(FilterMipmapRGB24);
+      public static readonly FunctionPointer<FilterMipmapDelegate> FilterMipmapRGBA32FP = BurstCompiler.CompileFunctionPointer<FilterMipmapDelegate>(FilterMipmapRGBA32);
 
-    [BurstCompile(CompileSynchronously = true)]
-    struct FilterMipmapRGB24Job : IJobParallelFor {
-      public int inputWidth;
-      public int inputHeight;
-      [ReadOnly]
-      public NativeSlice<byte> inputMipmap;
-
-      public int outputWidth;
-      public int outputHeight;
-      [WriteOnly, NativeDisableParallelForRestriction]
-      public NativeSlice<byte> outputMipmap;
-
-      public void Execute(int index) {
-        var outputX = index % outputWidth;
-        var outputY = index / outputWidth;
+      [BurstCompile(CompileSynchronously = true)]
+      static void FilterMipmapRGB24(ref FilterMipmapJob job, int outputIndex) {
+        var outputX = outputIndex % job.outputDimensions.x;
+        var outputY = outputIndex / job.outputDimensions.x;
         var outputColor = new uint3();
 
-        for (var offsetX = 0; offsetX < 2; offsetX++) {
-          for (var offsetY = 0; offsetY < 2; offsetY++) {
-            var inputX = min(mad(2, outputX, offsetX), inputWidth - 1);
-            var inputY = min(mad(2, outputY, offsetY), inputHeight - 1);
-            var inputIndex = mad(inputWidth, inputY, inputX);
-            outputColor.x += (uint)inputMipmap[mad(3, inputIndex, 0)] >> 2;
-            outputColor.y += (uint)inputMipmap[mad(3, inputIndex, 1)] >> 2;
-            outputColor.z += (uint)inputMipmap[mad(3, inputIndex, 2)] >> 2;
+        for (var offsetY = 0; offsetY < 2; offsetY++) {
+          for (var offsetX = 0; offsetX < 2; offsetX++) {
+            var inputX = min(mad(2, outputX, offsetX), job.inputDimensions.x - 1);
+            var inputY = min(mad(2, outputY, offsetY), job.inputDimensions.y - 1);
+            var inputIndex = mad(job.inputDimensions.x, inputY, inputX);
+            outputColor.x += (uint)job.inputMipmap[mad(3, inputIndex, 0)] >> 2;
+            outputColor.y += (uint)job.inputMipmap[mad(3, inputIndex, 1)] >> 2;
+            outputColor.z += (uint)job.inputMipmap[mad(3, inputIndex, 2)] >> 2;
           }
         }
 
-        outputMipmap[mad(3, index, 0)] = (byte)outputColor.x;
-        outputMipmap[mad(3, index, 1)] = (byte)outputColor.y;
-        outputMipmap[mad(3, index, 2)] = (byte)outputColor.z;
+        job.outputMipmap[mad(3, outputIndex, 0)] = (byte)outputColor.x;
+        job.outputMipmap[mad(3, outputIndex, 1)] = (byte)outputColor.y;
+        job.outputMipmap[mad(3, outputIndex, 2)] = (byte)outputColor.z;
       }
-    }
 
-    [BurstCompile(CompileSynchronously = true)]
-    struct FilterMipmapRGBA32Job : IJobParallelFor {
-      public int inputWidth;
-      public int inputHeight;
-      [ReadOnly]
-      public NativeSlice<uint> inputMipmap;
-
-      public int outputWidth;
-      public int outputHeight;
-      [WriteOnly]
-      public NativeSlice<uint> outputMipmap;
-
-      public void Execute(int index) {
-        var outputX = index % outputWidth;
-        var outputY = index / outputWidth;
+      [BurstCompile(CompileSynchronously = true)]
+      static void FilterMipmapRGBA32(ref FilterMipmapJob job, int outputIndex) {
+        var outputX = outputIndex % job.outputDimensions.x;
+        var outputY = outputIndex / job.outputDimensions.x;
         var outputColor = new uint4();
 
-        for (var offsetX = 0; offsetX < 2; offsetX++) {
-          for (var offsetY = 0; offsetY < 2; offsetY++) {
-            var inputX = min(mad(2, outputX, offsetX), inputWidth - 1);
-            var inputY = min(mad(2, outputY, offsetY), inputHeight - 1);
-            var inputColor = inputMipmap[mad(inputWidth, inputY, inputX)];
-            outputColor.x += (inputColor & 0x000000FFu) >> 2;
-            outputColor.y += (inputColor & 0x0000FF00u) >> 10;
-            outputColor.z += (inputColor & 0x00FF0000u) >> 18;
-            outputColor.w += (inputColor & 0xFF000000u) >> 26;
+        for (var offsetY = 0; offsetY < 2; offsetY++) {
+          for (var offsetX = 0; offsetX < 2; offsetX++) {
+            var inputX = min(mad(2, outputX, offsetX), job.inputDimensions.x - 1);
+            var inputY = min(mad(2, outputY, offsetY), job.inputDimensions.y - 1);
+            var inputIndex = mad(job.inputDimensions.x, inputY, inputX);
+            outputColor.x += (uint)job.inputMipmap[mad(4, inputIndex, 0)] >> 2;
+            outputColor.y += (uint)job.inputMipmap[mad(4, inputIndex, 1)] >> 2;
+            outputColor.z += (uint)job.inputMipmap[mad(4, inputIndex, 2)] >> 2;
+            outputColor.w += (uint)job.inputMipmap[mad(4, inputIndex, 3)] >> 2;
           }
         }
 
-        outputMipmap[index] =
-          (outputColor.x << 0) |
-          (outputColor.y << 8) |
-          (outputColor.z << 16) |
-          (outputColor.w << 24);
+        job.outputMipmap[mad(4, outputIndex, 0)] = (byte)outputColor.x;
+        job.outputMipmap[mad(4, outputIndex, 1)] = (byte)outputColor.y;
+        job.outputMipmap[mad(4, outputIndex, 2)] = (byte)outputColor.z;
+        job.outputMipmap[mad(4, outputIndex, 3)] = (byte)outputColor.w;
       }
+
+      [ReadOnly]
+      public NativeSlice<byte> inputMipmap;
+      public int2 inputDimensions;
+
+      [WriteOnly, NativeDisableParallelForRestriction]
+      public NativeSlice<byte> outputMipmap;
+      public int2 outputDimensions;
+
+      public FunctionPointer<FilterMipmapDelegate> processFunction;
+
+      public void Execute(int outputIndex) => processFunction.Invoke(ref this, outputIndex);
     }
   }
 }
