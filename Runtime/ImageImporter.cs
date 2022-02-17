@@ -325,7 +325,7 @@ public static partial class AsyncImageLoader {
       public NativeSlice<byte> inputMipmap;
       public int2 inputDimensions;
 
-      [WriteOnly, NativeDisableParallelForRestriction]
+      [WriteOnly, NativeDisableContainerSafetyRestriction, NativeDisableParallelForRestriction]
       public NativeSlice<byte> outputMipmap;
       public int2 outputDimensions;
 

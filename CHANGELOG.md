@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Fixed
+- Fix Burst complain about two containers maybe aliasing in FilterMipmapJob.
+
 ## [0.1.1] - 2021-07-30
 ### Added
 - Add `CHANGELOG.md`.
