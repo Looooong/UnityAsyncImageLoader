@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+- Fix Burst complain about two containers maybe aliasing in FilterMipmapJob.
+- Use `Texture2D.Reinitialize` instead of `Texture2D.Resize` from Unity 2021.1 onward.
+
 ## [0.1.1] - 2021-07-30
 ### Added
 - Add `CHANGELOG.md`.
