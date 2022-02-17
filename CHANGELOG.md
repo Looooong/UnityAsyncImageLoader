@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+## [0.1.2] - 2022-02-17
 ### Fixed
 - Fix Burst complain about two containers maybe aliasing in FilterMipmapJob.
 - Use `Texture2D.Reinitialize` instead of `Texture2D.Resize` from Unity 2021.1 onward.
@@ -20,6 +21,7 @@
 ### Added
 - Implement `AsyncImageLoader`.
 
-[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.0
