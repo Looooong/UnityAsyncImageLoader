@@ -109,7 +109,11 @@ public static partial class AsyncImageLoader {
     public void LoadIntoTexture(Texture2D texture) {
       using (LoadIntoTextureMarker.Auto()) {
         var mipmapCount = CalculateMipmapCount(true);
+#if UNITY_2021_1_OR_NEWER
+        texture.Reinitialize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
+#else
         texture.Resize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
+#endif
         var rawTextureView = texture.GetRawTextureData<byte>();
         LoadRawTextureData(rawTextureView);
         ProcessRawTextureData(rawTextureView, mipmapCount);
@@ -120,7 +124,11 @@ public static partial class AsyncImageLoader {
 
     public async Task LoadIntoTextureAsync(Texture2D texture) {
       var mipmapCount = CalculateMipmapCount(true);
+#if UNITY_2021_1_OR_NEWER
+      texture.Reinitialize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
+#else
       texture.Resize(_width, _height, _textureFormat, _loaderSettings.generateMipmap);
+#endif
       var rawTextureView = texture.GetRawTextureData<byte>();
       await Task.Run(() => LoadRawTextureData(rawTextureView));
       ProcessRawTextureData(rawTextureView, mipmapCount);
