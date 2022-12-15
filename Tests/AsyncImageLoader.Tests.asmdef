@@ -1,0 +1,11 @@
+{
+    "name": "AsyncImageLoader.Tests",
+    "references": [
+        "AsyncImageLoader.Runtime"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": []
+}

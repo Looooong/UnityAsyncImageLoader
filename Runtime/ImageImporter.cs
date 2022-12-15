@@ -294,15 +294,15 @@ public static partial class AsyncImageLoader {
             var inputX = min(mad(2, outputX, offsetX), job.inputDimensions.x - 1);
             var inputY = min(mad(2, outputY, offsetY), job.inputDimensions.y - 1);
             var inputIndex = mad(job.inputDimensions.x, inputY, inputX);
-            outputColor.x += (uint)job.inputMipmap[mad(3, inputIndex, 0)] >> 2;
-            outputColor.y += (uint)job.inputMipmap[mad(3, inputIndex, 1)] >> 2;
-            outputColor.z += (uint)job.inputMipmap[mad(3, inputIndex, 2)] >> 2;
+            outputColor.x += (uint)job.inputMipmap[mad(3, inputIndex, 0)];
+            outputColor.y += (uint)job.inputMipmap[mad(3, inputIndex, 1)];
+            outputColor.z += (uint)job.inputMipmap[mad(3, inputIndex, 2)];
           }
         }
 
-        job.outputMipmap[mad(3, outputIndex, 0)] = (byte)outputColor.x;
-        job.outputMipmap[mad(3, outputIndex, 1)] = (byte)outputColor.y;
-        job.outputMipmap[mad(3, outputIndex, 2)] = (byte)outputColor.z;
+        job.outputMipmap[mad(3, outputIndex, 0)] = (byte)(outputColor.x >> 2);
+        job.outputMipmap[mad(3, outputIndex, 1)] = (byte)(outputColor.y >> 2);
+        job.outputMipmap[mad(3, outputIndex, 2)] = (byte)(outputColor.z >> 2);
       }
 
       [BurstCompile(CompileSynchronously = true)]
@@ -316,17 +316,17 @@ public static partial class AsyncImageLoader {
             var inputX = min(mad(2, outputX, offsetX), job.inputDimensions.x - 1);
             var inputY = min(mad(2, outputY, offsetY), job.inputDimensions.y - 1);
             var inputIndex = mad(job.inputDimensions.x, inputY, inputX);
-            outputColor.x += (uint)job.inputMipmap[mad(4, inputIndex, 0)] >> 2;
-            outputColor.y += (uint)job.inputMipmap[mad(4, inputIndex, 1)] >> 2;
-            outputColor.z += (uint)job.inputMipmap[mad(4, inputIndex, 2)] >> 2;
-            outputColor.w += (uint)job.inputMipmap[mad(4, inputIndex, 3)] >> 2;
+            outputColor.x += (uint)job.inputMipmap[mad(4, inputIndex, 0)];
+            outputColor.y += (uint)job.inputMipmap[mad(4, inputIndex, 1)];
+            outputColor.z += (uint)job.inputMipmap[mad(4, inputIndex, 2)];
+            outputColor.w += (uint)job.inputMipmap[mad(4, inputIndex, 3)];
           }
         }
 
-        job.outputMipmap[mad(4, outputIndex, 0)] = (byte)outputColor.x;
-        job.outputMipmap[mad(4, outputIndex, 1)] = (byte)outputColor.y;
-        job.outputMipmap[mad(4, outputIndex, 2)] = (byte)outputColor.z;
-        job.outputMipmap[mad(4, outputIndex, 3)] = (byte)outputColor.w;
+        job.outputMipmap[mad(4, outputIndex, 0)] = (byte)(outputColor.x >> 2);
+        job.outputMipmap[mad(4, outputIndex, 1)] = (byte)(outputColor.y >> 2);
+        job.outputMipmap[mad(4, outputIndex, 2)] = (byte)(outputColor.z >> 2);
+        job.outputMipmap[mad(4, outputIndex, 3)] = (byte)(outputColor.w >> 2);
       }
 
       [ReadOnly]

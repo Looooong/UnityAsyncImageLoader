@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Fixed
+- Fix accuracy loss when generating mipmap (#7)
 
 ## [0.1.2] - 2022-02-17
 ### Fixed
