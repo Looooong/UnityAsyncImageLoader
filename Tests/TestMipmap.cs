@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.TestTools;
 
 public class TestMipmap {
   [Test]
@@ -76,22 +75,22 @@ public class TestMipmap {
     Assert.That(texture.mipmapCount, Is.EqualTo(2));
 
     Assert.That(mipmapLevel0.Length, Is.EqualTo(3 * 4));
-    Assert.That(mipmapLevel0[0], Is.EqualTo(0XF7));
+    Assert.That(mipmapLevel0[0], Is.EqualTo(0XFF));
     Assert.That(mipmapLevel0[1], Is.EqualTo(0XFF));
     Assert.That(mipmapLevel0[2], Is.EqualTo(0XFF));
-    Assert.That(mipmapLevel0[3], Is.EqualTo(0XF7));
-    Assert.That(mipmapLevel0[4], Is.EqualTo(0X07));
-    Assert.That(mipmapLevel0[5], Is.EqualTo(0X08));
+    Assert.That(mipmapLevel0[3], Is.EqualTo(0XFE));
+    Assert.That(mipmapLevel0[4], Is.EqualTo(0X00));
+    Assert.That(mipmapLevel0[5], Is.EqualTo(0X00));
     Assert.That(mipmapLevel0[6], Is.EqualTo(0X00));
     Assert.That(mipmapLevel0[7], Is.EqualTo(0XFF));
-    Assert.That(mipmapLevel0[8], Is.EqualTo(0X00));
+    Assert.That(mipmapLevel0[8], Is.EqualTo(0X01));
     Assert.That(mipmapLevel0[9], Is.EqualTo(0X00));
-    Assert.That(mipmapLevel0[10], Is.EqualTo(0X08));
-    Assert.That(mipmapLevel0[11], Is.EqualTo(0XFF));
+    Assert.That(mipmapLevel0[10], Is.EqualTo(0X00));
+    Assert.That(mipmapLevel0[11], Is.EqualTo(0XFE));
 
     Assert.That(mipmapLevel1.Length, Is.EqualTo(3));
-    Assert.That(mipmapLevel1[0], Is.EqualTo(0x7B));
-    Assert.That(mipmapLevel1[1], Is.EqualTo(0x83));
-    Assert.That(mipmapLevel1[2], Is.EqualTo(0x81));
+    Assert.That(mipmapLevel1[0], Is.EqualTo(0x7F));
+    Assert.That(mipmapLevel1[1], Is.EqualTo(0x7F));
+    Assert.That(mipmapLevel1[2], Is.EqualTo(0x7F));
   }
 }
