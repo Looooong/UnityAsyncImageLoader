@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+## [0.1.3] - 2022-12-19
 ### Enhancement
 - Add support for non-bitmap image type.
 
@@ -26,7 +28,8 @@
 ### Added
 - Implement `AsyncImageLoader`.
 
-[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Looooong/UnityAsyncImageLoader/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.3
 [0.1.2]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Looooong/UnityAsyncImageLoader/releases/tag/v0.1.0
